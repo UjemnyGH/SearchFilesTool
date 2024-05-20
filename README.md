@@ -11,3 +11,10 @@ Tool that speeds up searching through or searching keyword in big amount of file
     -i  |   --include   -   List of included extensions (write all in one parameter separated by space eg. ... -i \".ext .ex2 .etc\" or left blank to search through everything)\n"
     -s  |   --silent    -   Disable all info about file
 ```
+
+## How to start using
+> 1. Clone repository (git clone https://github.com/UjemnyGH/SearchFilesTool.git) or download zip <br>
+> 2. Use SearchFilesTool<br>
+> 3. (optional) You can add executable to /bin folder (on linux) or as environment dependency (for windows) for wider usage
+
+And as always stay sharp and have fun!
