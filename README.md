@@ -15,6 +15,6 @@ Tool that speeds up searching through or searching keyword in big amount of file
 ## How to start using
 > 1. Clone repository (git clone https://github.com/UjemnyGH/SearchFilesTool.git) or download zip <br>
 > 2. Use SearchFilesTool<br>
-> 3. (optional) You can add executable to /bin folder (on linux) or as environment dependency (for windows) for wider usage
+> 3. (optional) You can add executable to /bin folder (on linux) or as environment variables (for windows) for wider usage
 
 And as always stay sharp and have fun!
