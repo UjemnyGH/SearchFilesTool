@@ -235,8 +235,9 @@ int main(int argc, char** argv) {
         if(gFoundKeywords.size() == 0) {
             printf("\nNo keyword \"%s\" occured in files\n", gKeyword.c_str());
         }
-
-        printf("\nKeyword \"%s\" occured in files: \n", gKeyword.c_str());
+        else {
+            printf("\nKeyword \"%s\" occured in files: \n", gKeyword.c_str());
+        }
 
         // If there are keywords, show where are they
         for(std::string found : gFoundKeywords) {
