@@ -14,9 +14,10 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <map>
 
 // All found keywords with indexes
-std::vector<std::string> gFoundKeywords;
+std::vector<std::string> gFoundKeywords, gFoundFileKeywords;
 // Should info log stay silent
 bool gSilent = false;
 // Did user set keuword to search
@@ -25,13 +26,21 @@ bool gKeywordSet = false;
 bool gPathSet = false;
 // Should we show also directories in info log
 bool gShowDirectory = false;
+// Count all files
+bool gCount = false;
+// Count files of code flag
+bool gCountLinesOfCode = false;
+// Search through filenames to find keyword
+bool gShowFileKeyword = false;
 
 // Our path and keyword
-std::string gPath, gKeyword;
+std::string gPath, gKeyword, gFileKeyword;
 // Our excluded extensions from search
 std::vector<std::string> gExcludeExtensions;
 // Our included extensions in search
 std::vector<std::string> gSelectedExtensions;
+
+std::map<std::string, uint32_t> gExtensionsCount, gLinesOfCode;
 
 /**
  * @brief Print text on console but can be disabled on will
@@ -87,6 +96,35 @@ bool CheckExcludedExt(std::string ext) {
 }
 
 /**
+ * @brief Count all new lines (or lines of code as almost everyone use CR as new line)
+ * 
+ * @param path 
+ */
+void CountLinesOfCode(std::string path, bool isDirectory) {
+    if(gCountLinesOfCode && !isDirectory) {
+        std::ifstream f(path, std::ios::binary);
+
+        uint32_t lines_of_code = 0;
+        std::string str;
+
+        while(!f.eof()) {
+            std::getline(f, str);
+
+            lines_of_code++;
+        }
+
+        f.close();
+        
+        if(!gLinesOfCode.contains(path)) {
+            gLinesOfCode.insert(std::make_pair(path, lines_of_code));
+        }
+        else {
+            gLinesOfCode[path] += lines_of_code;
+        }
+    }
+}
+
+/**
  * @brief Recursivly searches through directories
  * 
  * @param path path to head directory
@@ -105,6 +143,19 @@ void SearchFiles(std::string path) {
         // If not print to output, ofc if user doesn`t silenced output
         if(CheckSelectedExt(entry.path().extension().string()) && !CheckExcludedExt(entry.path().extension().string())) {
             PrintInfo(std::string("[INFO]: Found file:\t") + entry.path().string() + std::string("\n"));
+
+            CountLinesOfCode(entry.path().string(), entry.is_directory());
+
+            if(entry.path().string().find(gFileKeyword) != std::string::npos) {
+                gFoundFileKeywords.push_back(entry.path().string());
+            }
+
+            if(!gExtensionsCount.contains(entry.path().extension().string())) {
+                gExtensionsCount.insert(std::make_pair(entry.path().extension().string(), 1));
+            }
+            else {
+                gExtensionsCount[entry.path().extension().string()]++;
+            }
         }
     }
 }
@@ -129,6 +180,19 @@ void SearchFilesForKeyword(std::string path, std::string keyword) {
         else {
             if(CheckSelectedExt(entry.path().extension().string()) && !CheckExcludedExt(entry.path().extension().string())) {
                 PrintInfo(std::string("[INFO]: Searching through:\t") + entry.path().string() + std::string("\n"));
+
+                CountLinesOfCode(entry.path().string(), entry.is_directory());
+
+                if(entry.path().string().find(gFileKeyword) != std::string::npos) {
+                    gFoundFileKeywords.push_back(entry.path().string());
+                }
+
+                if(!gExtensionsCount.contains(entry.path().extension().string())) {
+                    gExtensionsCount.insert(std::make_pair(entry.path().extension().string(), 1));
+                }
+                else {
+                    gExtensionsCount[entry.path().extension().string()]++;
+                }
 
                 std::ifstream f(entry.path().c_str(), std::ios::binary | std::ios::ate);
 
@@ -191,13 +255,16 @@ int main(int argc, char** argv) {
 
         if(arg == "-h" || arg == "--help") {
             std::cout << "\n\n" << argv[0] << " usage info:\n"
-            "\t-h\t|\t--help\t\t-\tThis prompt that you looking at right now\n"
-            "\t-p\t|\t--path\t\t-\tPath to search through\n"
-            "\t-k\t|\t--keyword\t-\tKeyword to search through files and find\n"
-            "\t-d\t|\t--dir\t\t-\tShow directories among files\n"
-            "\t-e\t|\t--exclude\t-\tList of excluded extensions (write all in one parameter separated by space eg. ... -e \".ext .ex2 .etc\" or left blank for no exclusion)\n"
-            "\t-i\t|\t--include\t-\tList of included extensions (write all in one parameter separated by space eg. ... -i \".ext .ex2 .etc\" or left blank to search through everything)\n"
-            "\t-s\t|\t--silent\t-\tDisable all info about file\n\n"
+            "\t-h  | --help\t\t- This prompt that you looking at right now\n"
+            "\t-p  | --path\t\t- Path to search through\n"
+            "\t-k  | --keyword\t\t- Keyword to search through files and find\n"
+            "\t-d  | --dir\t\t- Show directories among files\n"
+            "\t-e  | --exclude\t\t- List of excluded extensions (write all in one parameter separated by space eg. ... -e \".ext .ex2 .etc\" or left blank for no exclusion)\n"
+            "\t-i  | --include\t\t- List of included extensions (write all in one parameter separated by space eg. ... -i \".ext .ex2 .etc\" or left blank to search through everything)\n"
+            "\t-s  | --silent\t\t- Disable all info about file\n"
+            "\t-c  | --count\t\t- Count all included files\n"
+            "\t-l  | --lines\t\t- Count lines of code\n"
+            "\t-f  | --file-key\t- Search keyword in filename\n\n"
             "\tThis tool is used to search throughout all files specyfied by path\n\n";
 
             return 0;
@@ -221,6 +288,17 @@ int main(int argc, char** argv) {
         }
         else if(arg == "-i" || arg == "--include") {
             SplitString(std::string(argv[i + 1]), gSelectedExtensions, ' ');
+        }
+        else if(arg == "-c" || arg == "--count") {
+            gCount = true;
+        }
+        else if(arg == "-f" || arg == "--file-key") {
+            gFileKeyword = std::string(argv[i + 1]);
+
+            gShowFileKeyword = true;
+        }
+        else if(arg == "-l" || arg == "--lines") {
+            gCountLinesOfCode = true;
         }
     }
 
@@ -248,6 +326,35 @@ int main(int argc, char** argv) {
     // If we onlu have path do normal search
     if(gPathSet && !gKeywordSet) {
         SearchFiles(gPath);
+    }
+
+    if(gShowFileKeyword) {
+        if(gFoundFileKeywords.size() == 0) {
+            printf("\nNo filename keyword occured in files\n");
+        }
+        else {
+            printf("\nFilename keyword \"%s\" occured in files:\n", gFileKeyword.c_str());
+        }
+
+        for(std::string found : gFoundFileKeywords) {
+            printf("\t%s\n", found.c_str());
+        }
+    }
+
+    if(gCount) {
+        printf("\nExtension types found while searching:\n");
+
+        for(auto e : gExtensionsCount) {
+            std::cout << "\tExtension type \"" << e.first << "\" was found " << e.second << std::endl;
+        }
+    }
+
+    if(gCountLinesOfCode) {
+        printf("\nLines of code that files contain:\n");
+
+        for(auto f : gLinesOfCode) {
+            printf("\t%s\thas\t%d lines of code\n", f.first.c_str(), f.second);
+        }
     }
 
     // Flush output stream to be sure that all data was shown
