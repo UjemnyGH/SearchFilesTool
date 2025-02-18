@@ -32,6 +32,8 @@ bool gCount = false;
 bool gCountLinesOfCode = false;
 // Search through filenames to find keyword
 bool gShowFileKeyword = false;
+// Overall lines of code, all counted lines of code are added to this variable
+uint64_t gOverallLinesOfCode = 0;
 
 // Our path and keyword
 std::string gPath, gKeyword, gFileKeyword;
@@ -114,6 +116,8 @@ void CountLinesOfCode(std::string path, bool isDirectory) {
         }
 
         f.close();
+        
+        gOverallLinesOfCode += lines_of_code;
         
         if(!gLinesOfCode.contains(path)) {
             gLinesOfCode.insert(std::make_pair(path, lines_of_code));
