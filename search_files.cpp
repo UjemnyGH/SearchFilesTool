@@ -359,6 +359,8 @@ int main(int argc, char** argv) {
         for(auto f : gLinesOfCode) {
             printf("\t%s\thas\t%d lines of code\n", f.first.c_str(), f.second);
         }
+
+        printf("\nOverall lines of code: %llu\n", gOverallLinesOfCode);
     }
 
     // Flush output stream to be sure that all data was shown
